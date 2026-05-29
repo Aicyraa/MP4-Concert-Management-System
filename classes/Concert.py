@@ -4,7 +4,6 @@ from utils import (
     print_message,
     print_success,
     print_error,
-    display_attendees,
     display_durations,
     display_violations,
 )
@@ -98,6 +97,17 @@ class Concert(Record):
     def displayAttendees(self):
         pass
 
+        if self._isEmpty():
+            return print_error("Venue is empty.")
+
+        print_success(f"\n{'#':<5} {'Ticket':<12} {'Name':<15} {'Entry Time'}")
+        print("-" * 50)
+        for i, a in enumerate(reversed(self.attendees)):
+            entry_time = a['entryTime'].strftime('%I:%M %p') if a['entryTime'] else "N/A"
+            print(f"{i+1:<5} {a['ticketID']:<12} {a['name']:<15} {entry_time}")
+        print("-" * 50)
+        print_success(f"Total inside: {len(self.attendees)}\n")
+        
     def generateAttendanceReport(self):
         if not self.record:
             return print_error("No attendance data available for the report.")
