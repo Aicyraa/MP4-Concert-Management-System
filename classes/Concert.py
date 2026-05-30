@@ -6,6 +6,7 @@ from utils import (
     print_error,
     display_durations,
     display_violations,
+    fmt,
 )
 
 
@@ -16,8 +17,17 @@ class Concert(Record):
             hours=dur["hours"], minutes=dur["mins"], seconds=dur["secs"]
         )
 
-    def pushAttendee(self):
-        name = input(">>>  Enter attendee name (or press Enter to cancel): ").strip()
+    def pushAttendee(self, name: str = None):
+        """
+        Push an attendee into the venue.
+        - Terminal: calls input() when name is None.
+        - Streamlit: pass name directly to skip input().
+        """
+        if name is None:
+            name = input(
+                ">>>  Enter attendee name (or press Enter to cancel): "
+            ).strip()
+
         if not name:
             return print_error("Push cancelled: name cannot be empty.")
 
@@ -34,6 +44,7 @@ class Concert(Record):
         self.attendees.append(attendee)
         self.record.append(attendee)
         print_success(f"{name} entered. Ticket: {next_ticket}")
+        return attendee
 
     def popAttendee(self):
         if self._isEmpty():
@@ -48,6 +59,7 @@ class Concert(Record):
             f"Ticket: {ticket_id} | "
             f"Exit Time: {exit_time.strftime('%H:%M:%S')}"
         )
+        return attendee
 
     def peekLastAttendee(self):
         if self._isEmpty():
@@ -58,6 +70,7 @@ class Concert(Record):
             f"Last Attendee: ID: {ticket_id}, Name: {name}, "
             f"Entry Time: {entry_time.strftime('%H:%M:%S')}"
         )
+        return self.attendees[-1]
 
     def getAttendanceDuration(self):
         if not self.record:
@@ -95,19 +108,19 @@ class Concert(Record):
         return violations
 
     def displayAttendees(self):
-        pass
-
         if self._isEmpty():
             return print_error("Venue is empty.")
 
         print_success(f"\n{'#':<5} {'Ticket':<12} {'Name':<15} {'Entry Time'}")
         print("-" * 50)
         for i, a in enumerate(reversed(self.attendees)):
-            entry_time = a['entryTime'].strftime('%I:%M %p') if a['entryTime'] else "N/A"
+            entry_time = (
+                a["entryTime"].strftime("%I:%M %p") if a["entryTime"] else "N/A"
+            )
             print(f"{i+1:<5} {a['ticketID']:<12} {a['name']:<15} {entry_time}")
         print("-" * 50)
         print_success(f"Total inside: {len(self.attendees)}\n")
-        
+
     def generateAttendanceReport(self):
         if not self.record:
             return print_error("No attendance data available for the report.")
@@ -123,9 +136,6 @@ class Concert(Record):
             end = rec["exitTime"] or datetime.now()
             durations.append((end - rec["entryTime"]).total_seconds())
 
-        def fmt(sec):
-            return str(timedelta(seconds=int(sec)))
-
         sep = "=" * 55
         print(f"\n{sep}")
         print("        CONCERT ATTENDANCE REPORT")
@@ -139,7 +149,11 @@ class Concert(Record):
         print("  " + "-" * 50)
         for rec in self.record:
             entry = rec["entryTime"].strftime("%H:%M:%S") if rec["entryTime"] else "N/A"
-            exit_ = rec["exitTime"].strftime("%H:%M:%S") if rec["exitTime"] else "Still inside"
+            exit_ = (
+                rec["exitTime"].strftime("%H:%M:%S")
+                if rec["exitTime"]
+                else "Still inside"
+            )
             print(f"  {rec['ticketID']:<8} {rec['name']:<20} {entry:<12} {exit_}")
 
         if durations:
@@ -154,9 +168,13 @@ class Concert(Record):
             end = rec["exitTime"] or datetime.now()
             attended = end - rec["entryTime"]
             if attended > self.duration:
-                violations.append(f"  Ticket {rec['ticketID']} | {rec['name']}: Overstay")
+                violations.append(
+                    f"  Ticket {rec['ticketID']} | {rec['name']}: Overstay"
+                )
             elif rec["exitTime"] and attended < self.duration:
-                violations.append(f"  Ticket {rec['ticketID']} | {rec['name']}: Early Exit")
+                violations.append(
+                    f"  Ticket {rec['ticketID']} | {rec['name']}: Early Exit"
+                )
 
         print(f"\n  Violations ({len(violations)} found)")
         for v in violations:
@@ -165,6 +183,15 @@ class Concert(Record):
             print("  None detected.")
 
         print(f"\n{sep}\n")
+
+        # Return structured data for Streamlit
+        return {
+            "total": total,
+            "still_inside": still_inside,
+            "exited": exited,
+            "durations": durations,
+            "violations": violations,
+        }
 
     # -------------------------
     # Private helpers
