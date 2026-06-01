@@ -21,7 +21,6 @@ class Concert(Record):
     def __init__(self, **dur):
         super().__init__() 
         self.duration = timedelta(hours=dur["hours"], minutes=dur["mins"], seconds=dur["secs"])
-        #Concert(hours = 2, mins = 30, secs = 0), timedelta(hours = 2) 
     
     def pushAttendee(self, name: str = None):
         if name is None:
