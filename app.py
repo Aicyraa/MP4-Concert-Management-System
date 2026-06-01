@@ -4,9 +4,10 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 from utils import fmt, build_df, metric_card, metric_row, box_title, empty_state
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta    
 import sys
 import os
+
 
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -123,11 +124,11 @@ st.markdown(
 if "concert" not in st.session_state:
     st.session_state.concert = None
 if "action_msg" not in st.session_state:
-    st.session_state.action_msg = None
+    st.session_state.action_msg = None    
 if "action_type" not in st.session_state:
-    st.session_state.action_type = None
+    st.session_state.action_type = None  #Either success or error 
 
-
+    
 # ════════════════════════════════════════════════════════════════════════════
 # SCREEN 1 — Setup
 # ════════════════════════════════════════════════════════════════════════════
@@ -144,7 +145,7 @@ if st.session_state.concert is None:
     with col:
         st.markdown("**Concert Duration**")
         c1, c2, c3 = st.columns(3)
-        h = c1.number_input("Hours", min_value=0, max_value=23, value=2)
+        h = c1.number_input("Hours", min_value=0, max_value=23, value=2) 
         m = c2.number_input("Minutes", min_value=0, max_value=59, value=0)
         s = c3.number_input("Seconds", min_value=0, max_value=59, value=0)
         st.markdown("<br>", unsafe_allow_html=True)
@@ -170,7 +171,7 @@ with h_left:
     st.markdown(
         f'<div class="page-header">'
         f"<h1>🎵 Concert Attendance System</h1>"
-        f'<p>Duration: {concert.duration} &nbsp;·&nbsp; {datetime.now().strftime("%A, %d %B %Y")}</p>'
+        f'<p>Duration: {concert.duration} &nbsp;·&nbsp; {datetime.now().strftime("%A, %d %B %Y")}</p>'   
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -207,7 +208,7 @@ def peek_modal():
 
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
-tab1, tab2, tab3, tab4 = st.tabs(
+tab1, tab2, tab3, tab4 = st.tabs(    
     [
         "🎟  Attendees",
         "⏱  Durations",
@@ -224,7 +225,7 @@ with tab1:
     total = len(concert.record)
     exited = total - inside
     metric_row(
-        metric_card("Currently Inside", inside, "green"),
+        metric_card("Currently Inside", inside, "green"),  
         metric_card("Total on Record", total, "blue"),
         metric_card("Already Exited", exited),
     )
@@ -246,20 +247,14 @@ with tab1:
         peek_clicked = st.button("Peek", width='stretch')
 
     if push_clicked:
-        stripped = name_input.strip()
+        stripped = name_input.strip() 
         if stripped:
-            # Check for duplicate name before calling pushAttendee
-            existing_names = [a["name"].lower() for a in concert.record]
-            if stripped.lower() in existing_names:
-                st.session_state.action_msg = f"'{stripped}' is already registered in this concert."
-                st.session_state.action_type = "error"
-            else:
-                result = concert.pushAttendee(name=stripped)
-                if result:
-                    st.session_state.action_msg = (
-                        f"✓ {result['name']} entered — Ticket #{result['ticketID']}"
-                    )
-                    st.session_state.action_type = "success"
+            result = concert.pushAttendee(name=stripped)
+            if result:
+                st.session_state.action_msg = (
+                    f"✓ {result['name']} entered — Ticket #{result['ticketID']}"    
+                )
+                st.session_state.action_type = "success"
         else:
             st.session_state.action_msg = "Name cannot be empty."
             st.session_state.action_type = "error"
@@ -362,10 +357,17 @@ with tab2:
             fig, ax = plt.subplots(figsize=(9, max(3, len(valid) * 0.55)))
             fig.patch.set_facecolor("#FFFFFF")
             ax.set_facecolor("#F7F7F8")
-            colors = [
-                "#D94F4F" if (s / 60) > concert_limit else "#2E6EE0"
-                for s in valid["_dur_sec"]
-            ]
+            colors = []
+            for _, row in valid.iterrows():
+                dur_min = row["_dur_sec"] / 60
+                is_exited = row["_exit_dt"] is not None
+                if dur_min > concert_limit:
+                    colors.append("#D94F4F")  # Overstay
+                elif is_exited and dur_min < concert_limit * 0.5:
+                    colors.append("#2D9E6B")  # Early Exit
+                else:
+                    colors.append("#2E6EE0")  # Normal
+
             ax.barh(
                 valid["Name"],
                 valid["_dur_sec"] / 60,
@@ -385,6 +387,7 @@ with tab2:
                 handles=[
                     mpatches.Patch(color="#2E6EE0", label="Normal"),
                     mpatches.Patch(color="#D94F4F", label="Overstay"),
+                    mpatches.Patch(color="#2D9E6B", label="Early Exit"),
                     mpatches.Patch(
                         color="#E07B1A",
                         label=f"Concert Duration ({fmt(concert.duration.total_seconds())})",
